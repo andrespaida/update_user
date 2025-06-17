@@ -1,0 +1,43 @@
+name: Deploy UPDATE_USER to EC2
+
+on:
+  push:
+    branches:
+      - qa
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Clean old app folder on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} "rm -rf ~/update-user && mkdir -p ~/update-user"
+
+      - name: Copy project to EC2
+        run: |
+          scp -r ./* ubuntu@${{ secrets.EC2_HOST }}:~/update-user
+
+      - name: Write .env file on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << EOF
+            echo "${{ secrets.ENV_FILE }}" > ~/update-user/.env
+          EOF
+
+      - name: Build and run Docker container
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            cd ~/update-user
+            sudo docker stop update-user || true
+            sudo docker rm update-user || true
+            sudo docker build --no-cache -t update-user .
+            sudo docker run -d --name update-user -p 3003:3003 --env-file .env update-user
+          EOF

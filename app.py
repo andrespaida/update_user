@@ -4,13 +4,12 @@ from routes import routes  # Asumiendo que usas un blueprint
 
 app = Flask(__name__)
 
-# ✅ Habilita CORS para todas las rutas
-CORS(app)
+# ✅ Habilita CORS correctamente para todos los orígenes y rutas
+CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
 
-# Si prefieres limitarlo a solo tu frontend:
-# CORS(app, origins=["http://localhost:5173"])
-
+# ✅ Registra el blueprint de rutas
 app.register_blueprint(routes)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5002)
+    # ✅ Corre en el puerto correcto y accesible desde fuera del contenedor
+    app.run(host='0.0.0.0', port=3003, debug=False)
