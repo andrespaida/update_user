@@ -12,7 +12,6 @@ def update_user_route(user_id):
     data = request.get_json()
     allowed_fields = ['name', 'email', 'password', 'role']
 
-    # Solo el usuario puede editarse a sí mismo, excepto admin
     if requester['role'] != 'admin' and requester['id'] != user_id:
         return jsonify({"error": "You can only update your own profile"}), 403
 
